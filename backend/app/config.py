@@ -42,7 +42,13 @@ class Settings(BaseSettings):
     TOP_K: int = 8
 
     # ---- Server ----
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # ---- Server ----
+    # Comma-separated list, e.g. "https://your-app.vercel.app,http://localhost:5173"
+    CORS_ORIGINS_RAW: str = "https://ai-software-engineer-omega.vercel.app,http://127.0.0.1:5173"
+
+    @property
+    def CORS_ORIGINS(self) -> list[str]:
+        return [o.strip() for o in self.CORS_ORIGINS_RAW.split(",") if o.strip()]
 
     # ---- Database (Neon Postgres) ----
     # Get this from your Neon project dashboard -> Connection Details.
