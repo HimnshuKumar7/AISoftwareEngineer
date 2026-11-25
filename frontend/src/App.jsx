@@ -14,6 +14,7 @@ export default function App() {
       setStatus("signedOut");
       return;
     }
+    
     api
       .me()
       .then((u) => {

@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 
+function cleanOutput(text) {
+  if (!text) return "";
+  return text.replace(/<br\s*\/?>/gi, "\n").replace(/<\/?[a-zA-Z0-9]+[^>]*>/g, "");
+}
+
 export default function Dashboard({ user, onOpenWorkspace, onLogout }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -71,7 +76,7 @@ export default function Dashboard({ user, onOpenWorkspace, onLogout }) {
                   <span className="badge">{h.action_type}</span> {h.question}
                 </p>
                 <p className="plan">{h.repo_url}</p>
-                <pre className="answer">{h.answer}</pre>
+                <pre className="answer">{cleanOutput(h.answer)}</pre>
               </article>
             ))}
           </div>

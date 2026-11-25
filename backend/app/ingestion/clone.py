@@ -4,19 +4,22 @@ import shutil
 from pathlib import Path
 
 import git
-
+import os
+import stat
 from app.config import settings
 
 # File extensions we bother to parse / index
 SUPPORTED_EXTENSIONS = {
-    ".py", ".js", ".jsx", ".ts", ".tsx", ".java", ".go", ".rb", ".rs",
+    ".py", ".ipynb", ".js", ".jsx", ".ts", ".tsx", ".java", ".go", ".rb", ".rs",
     ".c", ".h", ".cpp", ".hpp", ".cs", ".php", ".md", ".json", ".yaml",
-    ".yml", ".txt",
+    ".yml", ".txt", ".sql", ".sh", ".bash", ".r", ".scala", ".kt",
 }
 
 IGNORED_DIRS = {
     ".git", "node_modules", "venv", ".venv", "__pycache__", "dist",
     "build", ".next", "target", "vendor", ".idea", ".vscode", "coverage",
+    ".cache", ".pytest_cache", ".mypy_cache", "site-packages", "out",
+    ".turbo", ".parcel-cache", "bin", "obj",
 }
 
 
@@ -30,9 +33,14 @@ def clone_repo(repo_url: str, branch: str | None = None) -> tuple[str, Path]:
     repo_id = repo_id_from_url(repo_url + (branch or ""))
     dest = Path(settings.DATA_DIR) / "repos" / repo_id
 
+    def _remove_readonly(func, path, exc_info):
+        """shutil.rmtree can't delete read-only files on Windows (git marks
+        pack files read-only) - this clears the flag and retries."""
+        os.chmod(path, stat.S_IWRITE)
+        func(path)
+
     if dest.exists():
-        shutil.rmtree(dest)  # always re-clone fresh to keep index consistent
-    dest.mkdir(parents=True, exist_ok=True)
+        shutil.rmtree(dest, onerror=_remove_readonly)
 
     clone_kwargs = {"depth": 1}
     if branch:
@@ -52,7 +60,7 @@ def iter_source_files(repo_path: Path):
         if path.suffix.lower() not in SUPPORTED_EXTENSIONS:
             continue
         try:
-            if path.stat().st_size > 500_000:  # skip huge generated files
+            if path.stat().st_size > settings.MAX_FILE_SIZE_BYTES:  # skip huge files/datasets > 500KB
                 continue
         except OSError:
             continue

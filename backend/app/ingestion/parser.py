@@ -62,7 +62,68 @@ def _extract_name(node, source_bytes: bytes) -> str | None:
     return None
 
 
+def _parse_ipynb_chunks(path: Path, repo_root: Path) -> list[CodeChunk]:
+    """Parse Jupyter notebook (.ipynb) files into code and markdown cell chunks."""
+    import json
+    rel_path = str(path.relative_to(repo_root)).replace("\\", "/")
+    try:
+        data = json.loads(path.read_text(encoding="utf-8", errors="ignore"))
+    except Exception:
+        return []
+
+    cells = data.get("cells", [])
+    chunks: list[CodeChunk] = []
+    line_offset = 1
+
+    for cell_idx, cell in enumerate(cells, start=1):
+        cell_type = cell.get("cell_type", "code")
+        source = cell.get("source", [])
+        if isinstance(source, list):
+            cell_text = "".join(source)
+        elif isinstance(source, str):
+            cell_text = source
+        else:
+            cell_text = ""
+
+        cell_text = cell_text.strip()
+        if not cell_text:
+            continue
+
+        # Prevent giant embedded datasets or base64 strings in notebook cells from inflating RAM
+        if len(cell_text) > 8000:
+            cell_text = cell_text[:8000] + "\n# ... [truncated oversized notebook cell content]"
+
+        lines = cell_text.splitlines()
+        num_lines = len(lines)
+        start_line = line_offset
+        end_line = line_offset + num_lines - 1
+        line_offset = end_line + 1
+
+        # Extract identifier from functions/classes if present in the cell
+        symbol = None
+        for line in lines:
+            line_str = line.strip()
+            if line_str.startswith("class ") or line_str.startswith("def "):
+                symbol = line_str.split("(")[0].replace("class ", "").replace("def ", "").strip()
+                break
+        if not symbol:
+            symbol = f"{path.stem} (cell {cell_idx})"
+
+        chunks.append(CodeChunk(
+            file_path=rel_path,
+            start_line=start_line,
+            end_line=end_line,
+            symbol=symbol,
+            node_type=f"ipynb_{cell_type}",
+            text=cell_text,
+        ))
+    return chunks
+
+
 def parse_file_to_chunks(path: Path, repo_root: Path) -> list[CodeChunk]:
+    if path.suffix.lower() == ".ipynb":
+        return _parse_ipynb_chunks(path, repo_root)
+
     rel_path = str(path.relative_to(repo_root)).replace("\\", "/")
     raw = path.read_bytes()
     lang = EXT_TO_LANGUAGE.get(path.suffix.lower())
@@ -123,3 +184,42 @@ def _fallback_chunks(rel_path: str, raw: bytes, window_lines: int = 60) -> list[
             text=body,
         ))
     return chunks
+
+
+def parse_and_split_file(path: Path, repo_root: Path) -> list[CodeChunk]:
+    """Parse a single file with tree-sitter and split any oversized chunks immediately."""
+    from app.ingestion.chunker import split_oversized
+    chunks: list[CodeChunk] = []
+    try:
+        raw_chunks = parse_file_to_chunks(path, repo_root)
+        for chunk in raw_chunks:
+            chunks.extend(split_oversized(chunk))
+    except Exception:
+        pass
+    return chunks
+
+
+def stream_repo_chunks(repo_path: Path):
+    """
+    Stream chunks from repository files one by one.
+    Avoids loading all files and ASTs into memory at once.
+    """
+    from app.ingestion.clone import iter_source_files
+    for file_path in iter_source_files(repo_path):
+        for chunk in parse_and_split_file(file_path, repo_path):
+            yield chunk
+
+
+def stream_chunk_batches(repo_path: Path, batch_size: int = 32):
+    """
+    Stream chunks in small fixed-size batches to strictly bound memory consumption.
+    """
+    batch: list[CodeChunk] = []
+    for chunk in stream_repo_chunks(repo_path):
+        batch.append(chunk)
+        if len(batch) >= batch_size:
+            yield batch
+            batch = []
+    if batch:
+        yield batch
+

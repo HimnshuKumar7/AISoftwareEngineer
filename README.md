@@ -13,6 +13,9 @@ ai-swe/
 └── frontend/         React (Vite) chat UI
 ```
 
+> **Render Deployment & 512MB RAM Optimization:**
+> See [RENDER_DEPLOYMENT.md](file:///c:/Users/himan/Downloads/ai-swe/RENDER_DEPLOYMENT.md) for the exact settings, blueprint (`render.yaml`), and memory optimizations designed for Render's 512MB RAM free/starter instances.
+
 ---
 
 ## 1. Which models to use (free options)
@@ -25,7 +28,7 @@ For the reasoning LLM (Planner / Reasoner / Final Answer), pick one:
 | Provider | Cost | Setup | Notes |
 |---|---|---|---|
 | **Ollama** (recommended to start) | Free, 100% local | Install [ollama.com](https://ollama.com), then `ollama pull qwen2.5-coder:7b` | No API key, fully private, needs ~8GB RAM. Also try `codellama:13b`, `deepseek-coder-v2:16b`, or `llama3.1:8b`. |
-| **Groq** | Free tier (generous rate limits) | Get a key at [console.groq.com](https://console.groq.com) | Hosted, very fast, `llama-3.3-70b-versatile` is strong for code reasoning. |
+| **Groq** | Free tier (generous rate limits) | Get a key at [console.groq.com](https://console.groq.com) | Hosted, very fast, `llama-3.1-8b-instant` is strong for code reasoning. |
 | **Gemini** | Free tier | Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-2.0-flash` is fast and free within quota. |
 | OpenAI | Paid | api.anthropic keys not applicable here — needs OpenAI billing | Only use if you already have credits. |
 

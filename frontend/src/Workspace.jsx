@@ -10,6 +10,11 @@ const QUICK_ACTIONS = [
 
 const STAGES = ["Planner", "Code Search", "Reasoner", "Final Answer"];
 
+function cleanOutput(text) {
+  if (!text) return "";
+  return text.replace(/<br\s*\/?>/gi, "\n").replace(/<\/?[a-zA-Z0-9]+[^>]*>/g, "");
+}
+
 export default function Workspace({ initialRepo, onBackToDashboard }) {
   const [repoUrl, setRepoUrl] = useState(initialRepo?.url || "");
   const [repoId, setRepoId] = useState(initialRepo?.id || null);
@@ -173,7 +178,7 @@ export default function Workspace({ initialRepo, onBackToDashboard }) {
               <article key={idx} className="answer-card">
                 <p className="question">{item.question}</p>
                 {item.plan?.length > 0 && <p className="plan">plan: {item.plan.join(" · ")}</p>}
-                <pre className="answer">{item.answer}</pre>
+                <pre className="answer">{cleanOutput(item.answer)}</pre>
                 {item.sources?.length > 0 && (
                   <details>
                     <summary>{item.sources.length} source chunk(s)</summary>

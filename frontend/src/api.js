@@ -14,6 +14,7 @@ export function clearToken() {
 }
 
 async function request(path, { method = "GET", body, auth = true } = {}) {
+  
   const headers = { "Content-Type": "application/json" };
   if (auth) {
     const token = getToken();
