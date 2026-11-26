@@ -65,12 +65,18 @@ select { width: auto; max-width: 100%; }
 /* ---------- brand + auth ---------- */
 .brand { font-weight: 700; letter-spacing: -.01em; display: flex; align-items: center; gap: .5rem; }
 .brand-mark { font-family: var(--mono); background: var(--accent-2); color: #fff; border-radius: 6px; padding: .05rem .4rem; font-size: .85rem; }
-.auth-wrap { min-height: 100%; display: grid; place-items: center; padding: 1.5rem; }
-.auth-card { width: 100%; max-width: 400px; background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 1.6rem; }
-.auth-card label { display: block; margin-bottom: .8rem; font-size: .85rem; color: var(--muted); }
-.auth-card label input { margin-top: .3rem; color: var(--text); }
-.auth-card h1 { margin-top: 1rem; }
-.switch { text-align: center; margin: 1rem 0 0; font-size: .9rem; color: var(--muted); }
+.auth-wrap { min-height: 100%; display: grid; place-items: center; padding: 2rem 1.5rem; }
+.auth-card { width: 100%; max-width: 440px; background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 1.9rem; box-shadow: 0 18px 45px rgba(0, 0, 0, .16); }
+.auth-card > .brand { font-size: 1rem; }
+.auth-card > .muted { max-width: 34ch; margin: .7rem 0 0; padding-bottom: 1.45rem; border-bottom: 1px solid var(--border); line-height: 1.6; }
+.auth-card h1 { margin: 1.55rem 0 .4rem; font-size: 1.55rem; letter-spacing: -.025em; }
+.auth-heading-copy { margin: 0; color: var(--muted); font-size: .93rem; }
+.auth-card label { display: block; margin: 1.15rem 0 0; font-size: .85rem; color: var(--muted); }
+.auth-card label input { margin-top: .42rem; min-height: 2.9rem; color: var(--text); }
+.auth-card .hint { margin: .45rem 0 0; }
+.auth-card .alert { margin: 1rem 0; }
+.auth-card .btn.block { min-height: 3.15rem; margin-top: 1.45rem; font-weight: 600; }
+.switch { text-align: center; margin: 1.2rem 0 0; font-size: .9rem; color: var(--muted); }
 
 /* ---------- workspace layout ---------- */
 .workspace { height: 100dvh; display: grid; grid-template-columns: var(--sidebar-w) minmax(0, 1fr); }

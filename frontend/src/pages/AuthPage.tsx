@@ -44,6 +44,9 @@ export default function AuthPage({ mode }: { mode: "login" | "register" }) {
         <div className="brand"><span className="brand-mark">{"</>"}</span> AI Software Engineer</div>
         <p className="muted">Ask questions about any public GitHub repository, grounded in its real code.</p>
         <h1>{isLogin ? "Sign in" : "Create your account"}</h1>
+        <p className="auth-heading-copy">
+          {isLogin ? "Continue to your code workspace." : "Start exploring repositories with grounded answers."}
+        </p>
 
         {!isLogin && (
           <label>Name <span className="muted">(optional)</span>
