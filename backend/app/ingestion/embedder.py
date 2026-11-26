@@ -39,9 +39,18 @@ class Embedder:
                     torch.set_num_threads(max(1, min(2, os.cpu_count() or 1)))
                     cache = str(Path(self.cache_dir).resolve()) if self.cache_dir else None
                     log.info("Loading embedding model %s (cache=%s)", self.model_name, cache)
-                    self._model = SentenceTransformer(self.model_name, device="cpu", cache_folder=cache)
+                    # The Docker image downloads MiniLM at build time.  Runtime instances
+                    # must use that cache instead of making Hugging Face network requests:
+                    # free Render services can lose outbound connectivity or restart while
+                    # an index job is waiting for the Hub.
+                    self._model = SentenceTransformer(
+                        self.model_name,
+                        device="cpu",
+                        cache_folder=cache,
+                        local_files_only=True,
+                    )
                     self._model.max_seq_length = 256  # MiniLM's trained maximum
-                    got = self._model.get_sentence_embedding_dimension()
+                    got = self._model.get_embedding_dimension()
                     if got != EMBEDDING_DIM:
                         raise RuntimeError(f"Unexpected embedding dim {got}, expected {EMBEDDING_DIM}")
         return self._model

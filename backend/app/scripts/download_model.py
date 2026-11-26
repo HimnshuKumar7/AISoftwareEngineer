@@ -17,7 +17,7 @@ def main() -> int:
     cache.mkdir(parents=True, exist_ok=True)
     print(f"Downloading {EMBEDDING_MODEL_NAME} into {cache} ...")
     model = SentenceTransformer(EMBEDDING_MODEL_NAME, device="cpu", cache_folder=str(cache))
-    dim = model.get_sentence_embedding_dimension()
+    dim = model.get_embedding_dimension()
     vec = model.encode(["def hello(): pass"], normalize_embeddings=True)
     assert dim == EMBEDDING_DIM and vec.shape == (1, EMBEDDING_DIM), f"unexpected model output {vec.shape}"
     print(f"OK: dim={dim}")
