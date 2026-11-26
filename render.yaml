@@ -2,10 +2,10 @@
 # Dashboard -> New -> Blueprint -> select this repository. Fill every `sync: false` value when prompted.
 services:
   - type: web
-    name: ai-software-engineer-api
+    name: ai-software-engineer-api-docker
     runtime: docker                  # Docker guarantees `git` is present for repository cloning
     plan: free                       # 512 MB RAM. Upgrade to "starter" if indexing large repos OOMs.
-    region: oregon                   # choose the region closest to your Neon project
+    region: ohio                  # choose the region closest to your Neon project
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     healthCheckPath: /api/health
