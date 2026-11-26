@@ -1,208 +1,176 @@
-# repo:// AI Software Engineer
+# AI Software Engineer
 
-An AI assistant that understands an entire GitHub repository: explains flows,
-finds where things are implemented, generates docs/tests, finds duplicate
-code, and suggests optimizations.
+Ask questions about any public GitHub repository and get answers grounded in its real code, with file-path and
+line-number citations. Built on a RAG pipeline: **Tree-sitter → MiniLM embeddings → per-repository FAISS indexes →
+4-stage LangGraph agent → pluggable LLM**.
 
-**Pipeline:** GitHub Repo → Clone → Parse (Tree-sitter) → Chunk → Embeddings
-→ FAISS → LangGraph (`Planner → Code Search → Reasoner → Final Answer`) → FastAPI → React
+| Layer | Technology | Hosted on |
+|---|---|---|
+| Frontend | React 18 + Vite + TypeScript | **Vercel** |
+| Backend | Python FastAPI, JWT auth | **Render** (Docker) |
+| Database | PostgreSQL (users, repositories, query history, **persisted FAISS indexes**) | **Neon** |
+
+## How it works
 
 ```
-ai-swe/
-├── backend/         FastAPI + LangChain + LangGraph + FAISS + Tree-sitter
-└── frontend/         React (Vite) chat UI
+GitHub URL ─► git clone (shallow) ─► Tree-sitter AST chunks ─► MiniLM (all-MiniLM-L6-v2) ─► FAISS index (one per repo)
+                                     function / method / class       384-d, L2-normalised            └─► serialized into Neon
 ```
 
-> **Render Deployment & 512MB RAM Optimization:**
-> See [RENDER_DEPLOYMENT.md](file:///c:/Users/himan/Downloads/ai-swe/RENDER_DEPLOYMENT.md) for the exact settings, blueprint (`render.yaml`), and memory optimizations designed for Render's 512MB RAM free/starter instances.
+**Ingestion.** 16 languages via per-language Tree-sitter wheels (no runtime downloads): Python, JavaScript, TypeScript,
+TSX, Java, Go, Rust, C, C++, C#, Ruby, PHP, Kotlin, Swift, Scala, Bash, Lua. Each function, method and class becomes a
+chunk with an exact 1-based line range; top-level code becomes `module` chunks and README/docs become `doc` chunks.
+Long functions are split into overlapping windows, long classes keep their header (members are separate chunks).
+**Jupyter notebooks (`.ipynb`)** are flattened to a text view (one `# %% [code] cell N` header per cell; outputs are never indexed). Code cells are parsed with Tree-sitter in the notebook's kernel language (IPython `%`/`!` magics are neutralised), markdown cells become `doc` chunks, and chunk line numbers refer to that view, so the UI's GitHub link omits the line anchor for notebooks.
+Embeddings are generated **only** by Sentence-Transformers `all-MiniLM-L6-v2`, independent of the LLM provider.
 
----
+**RAG (LangGraph, 4 stages).** `decompose` (LLM → 2–4 sub-queries, heuristic fallback) → `retrieve` (FAISS search per
+sub-query) → `dedupe` (same chunk, contained chunks, identical code) → `generate` (answer from line-numbered excerpts).
+Every `[path:start-end]` in the answer is **verified against the retrieved chunks**; unknown files/lines are removed and
+valid ranges are clamped to what was actually retrieved, so citations cannot point at invented lines.
 
-## 1. Which models to use (free options)
+**Capabilities** (the `mode` of a query): `qa` repository Q&A · `explain` documentation/explanation · `optimize`
+optimisation suggestions · `duplicates` duplicate-code analysis. Duplicates combine exact content hashes with FAISS
+nearest neighbours confirmed by token-shingle overlap; `GET /api/repos/{id}/duplicates` runs a whole-repo scan with no LLM.
 
-Embeddings are **always free and local** — `sentence-transformers/all-MiniLM-L6-v2`
-runs on CPU, no API key, no cost, and never leaves your machine.
+**Isolation.** One FAISS index per repository id, stored in `repo_indexes` keyed by that id. Nothing searches across
+repositories, and every repository route checks ownership (other users get `404`).
 
-For the reasoning LLM (Planner / Reasoner / Final Answer), pick one:
+**Persistence on an ephemeral disk.** Render's filesystem is wiped on restart/redeploy, so the serialized index
+(`faiss.serialize_index`) and gzip-compressed chunk metadata live in Neon and are lazily loaded into a small in-RAM LRU.
+Indexes survive restarts and redeploys; nothing important is written to local disk.
 
-| Provider | Cost | Setup | Notes |
-|---|---|---|---|
-| **Ollama** (recommended to start) | Free, 100% local | Install [ollama.com](https://ollama.com), then `ollama pull qwen2.5-coder:7b` | No API key, fully private, needs ~8GB RAM. Also try `codellama:13b`, `deepseek-coder-v2:16b`, or `llama3.1:8b`. |
-| **Groq** | Free tier (generous rate limits) | Get a key at [console.groq.com](https://console.groq.com) | Hosted, very fast, `llama-3.1-8b-instant` is strong for code reasoning. |
-| **Gemini** | Free tier | Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey) | `gemini-2.0-flash` is fast and free within quota. |
-| OpenAI | Paid | api.anthropic keys not applicable here — needs OpenAI billing | Only use if you already have credits. |
+## Repository layout
 
-Set your choice in `backend/.env` via `LLM_PROVIDER=ollama|groq|gemini|openai`.
-You can switch providers any time without re-indexing (indexing only uses the
-free local embedding model).
-
-**Recommended for a portfolio demo:** start with `ollama` (zero cost, zero
-signup) so anyone can run your project instantly, then optionally show it
-also works with Groq/Gemini for speed.
-
----
-
-## 2. Auth, Dashboard & Neon Postgres
-
-The app now has a **sign in / sign up** page and a **dashboard** (name,
-email, previously indexed repos, recent Q&A history). All of this is stored
-in **Neon** (serverless Postgres), via SQLAlchemy.
-
-### 2.1 Create a free Neon database
-1. Go to https://neon.tech, sign up (free tier is plenty for this project).
-2. Create a project, then open **Connection Details** and copy the connection
-   string. It looks like:
-   ```
-   postgresql://neondb_owner:PASSWORD@ep-xxxx-pooler.region.aws.neon.tech/neondb?sslmode=require
-   ```
-3. Paste it into `backend/.env` as `DATABASE_URL`.
-
-### 2.2 Set a JWT secret
-```powershell
-python -c "import secrets; print(secrets.token_hex(32))"
 ```
-Paste the output into `backend/.env` as `JWT_SECRET`.
-
-### 2.3 Tables are created automatically
-On first backend startup, `init_db()` runs `Base.metadata.create_all(...)`,
-which creates the `users`, `repos`, and `query_history` tables in your Neon
-database if they don't already exist. No manual migration step needed for
-this project's scope (for a production app, swap this for Alembic migrations).
-
-### How auth works
-- `POST /api/auth/signup` — name, email, password → bcrypt-hashed password
-  stored, returns a JWT.
-- `POST /api/auth/login` — email, password → JWT.
-- Every other API route (`/api/repos/index`, `/api/ask`, quick actions,
-  `/api/auth/dashboard`) requires `Authorization: Bearer <token>` and is
-  scoped to the signed-in user.
-- The frontend stores the JWT in `localStorage` and attaches it to every
-  request via `frontend/src/api.js`.
-- Every indexed repo is saved to the `repos` table (owned by the user who
-  indexed it) and every question/answer is saved to `query_history` — that's
-  what populates the dashboard.
-
----
-
-## 3. Running on Windows with a virtual environment
-
-### Prerequisites
-- Python 3.11 (from [python.org](https://python.org) — check "Add to PATH" during install)
-- Node.js 20 LTS (from [nodejs.org](https://nodejs.org))
-- Git for Windows
-- (If using Ollama) install from [ollama.com/download/windows](https://ollama.com/download/windows)
-
-### Step 1 — Backend setup (PowerShell)
-
-```powershell
-cd ai-swe\backend
-
-# create and activate a virtual environment
-python -m venv venv
-venv\Scripts\Activate.ps1
-
-# if PowerShell blocks the activation script, run once as admin:
-# Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-pip install --upgrade pip
-pip install -r requirements.txt
+backend/   FastAPI app (app/api, core, db, ingestion, rag, llm, services), schema.sql, Dockerfile, tests/
+frontend/  React app, vercel.json
+render.yaml        Render Blueprint (backend)
+scripts/smoke_test.py   end-to-end check of a running deployment
 ```
 
-### Step 2 — Configure your `.env`
+## Environment variables
 
-```powershell
-copy .env.example .env
-notepad .env
+### Backend (Render)
+
+| Variable | Required | Description |
+|---|---|---|
+| `ENVIRONMENT` | yes | `production` enables strict startup checks (refuses weak `JWT_SECRET` / SQLite) |
+| `DATABASE_URL` | yes | Neon connection string, `postgresql://…?sslmode=require` (pooled or direct) |
+| `JWT_SECRET` | yes | ≥ 32 random chars (`python -c "import secrets; print(secrets.token_urlsafe(48))"`); `render.yaml` generates one |
+| `CORS_ORIGINS` | yes | Comma-separated exact frontend origins, no trailing slash, e.g. `https://my-app.vercel.app` |
+| `CORS_ORIGIN_REGEX` | no | e.g. `https://my-app-.*\.vercel\.app` to allow Vercel preview deployments |
+| `LLM_PROVIDER` | yes | `ollama` \| `groq` \| `gemini` \| `openai` |
+| `LLM_MODEL` | no | Model id for the selected provider; blank uses the default in `app/llm/providers.py` |
+| `GROQ_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` | per provider | Key for the provider(s) you enable |
+| `OLLAMA_BASE_URL` | for Ollama | Must be reachable from Render (a public/tunnelled host; `localhost` will not work) |
+| `MAX_REPOS_PER_USER`, `MAX_REPO_SIZE_MB`, `MAX_FILES_PER_REPO`, `MAX_FILE_SIZE_KB`, `MAX_CHUNKS_PER_REPO`, `EMBEDDING_BATCH_SIZE` | no | Resource limits, defaults tuned for 512 MB |
+| `AUTO_CREATE_TABLES` | no | `true` (default) creates tables on boot; set `false` if you apply `backend/schema.sql` yourself |
+
+Every configured provider appears in the chat UI's provider dropdown; `LLM_PROVIDER`/`LLM_MODEL` set the default.
+Default model ids (`llama-3.3-70b-versatile`, `gemini-2.5-flash`, `gpt-4o-mini`, `llama3.1:8b`) are only defaults:
+providers retire models, so confirm they still exist and override with `LLM_MODEL` if not.
+
+### Frontend (Vercel)
+
+| Variable | Required | Description |
+|---|---|---|
+| `VITE_API_URL` | yes | Backend origin, e.g. `https://ai-software-engineer-api.onrender.com` (no trailing slash, no `/api`) |
+
+`VITE_*` values are baked in at build time: after changing it, **redeploy**.
+
+## Deployment (do the steps in this order)
+
+### 1. Neon PostgreSQL
+1. Create a project at neon.tech and copy the connection string (**Connection Details**, keep `sslmode=require`).
+2. Tables are created automatically on first boot. To manage the schema yourself, run `backend/schema.sql` in the
+   Neon SQL editor and set `AUTO_CREATE_TABLES=false`.
+
+### 2. Backend on Render
+1. Push this repository to GitHub.
+2. Render dashboard → **New → Blueprint** → select the repository (reads `render.yaml`). Or create a **Web Service**
+   manually with runtime **Docker**, Dockerfile path `./backend/Dockerfile`, Docker context `./backend`, health check
+   path `/api/health`.
+3. Fill the prompted variables: `DATABASE_URL`, your LLM provider key, and for now `CORS_ORIGINS=http://localhost:5173`.
+4. Deploy. The Docker build installs CPU-only PyTorch, the pinned requirements, and **downloads the MiniLM weights into
+   the image**, so the running service never needs Hugging Face. Build commands/start command are in `backend/Dockerfile`
+   (start: `uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1`).
+5. Open `https://<service>.onrender.com/api/health` → `{"status":"ok"}`, and `/api/health/ready` → `{"status":"ready"}`
+   (confirms Neon connectivity).
+
+### 3. Frontend on Vercel
+1. Vercel → **Add New → Project** → import the repository, set **Root Directory** to `frontend`.
+   `frontend/vercel.json` already sets the build (`npm run build`), output (`dist`) and the SPA rewrite so `/app/...`
+   deep links and refreshes work.
+2. Add the environment variable `VITE_API_URL` = your Render URL (Production and Preview) and deploy.
+
+### 4. Connect them
+Set Render's `CORS_ORIGINS` to the exact Vercel production URL (e.g. `https://my-app.vercel.app`) and let Render redeploy.
+Tokens travel in the `Authorization` header, so credentialed cookies/CORS are intentionally disabled.
+
+### 5. Verify end to end
+```bash
+python scripts/smoke_test.py --api https://<service>.onrender.com --origin https://<app>.vercel.app
+```
+It checks health, database, CORS from your Vercel origin, register/login, GitHub clone → index → `ready`, a real
+question with file/line citations that all lie inside retrieved sources, conversation history, and cleanup. Then
+sign in on the Vercel site and index a repository from the UI. **Treat the deployment as done only when this passes.**
+
+## Free-tier notes (read before relying on it)
+
+* **Cold starts:** Render free web services sleep after ~15 min idle; the first request can take about a minute (the
+  UI shows a "waking up" notice). While a repository is indexing the UI polls every 2.5 s, which keeps the service awake.
+* **Memory (512 MB):** PyTorch + MiniLM + FAISS is tight. The app loads the model lazily, runs **one** indexing job at a
+  time, encodes in small batches, caps files/chunks per repository, and uses one worker. If Render reports out-of-memory
+  during indexing, lower `MAX_CHUNKS_PER_REPO`/`EMBEDDING_BATCH_SIZE` or move to the Starter plan (2 GB). Peak memory
+  has **not** been measured on Render, so check the service's metrics after your first index.
+* **Interrupted jobs:** a restart mid-index marks the repository `failed` ("interrupted"); use **Re-index**.
+* **Neon storage:** each index is ~1.5 KB per chunk plus code text (a 3,000-chunk repo ≈ 5–10 MB); the free tier is 0.5 GB.
+* **LLM limits:** free provider tiers have per-minute token caps; context size is bounded by `MAX_CONTEXT_CHARS`.
+
+## Local development
+
+```bash
+# backend
+cd backend
+python -m venv .venv && source .venv/bin/activate
+pip install torch --index-url https://download.pytorch.org/whl/cpu
+pip install -r requirements-dev.txt
+cp .env.example .env            # set DATABASE_URL (Neon, or leave the SQLite default), JWT_SECRET, an LLM key
+python -m app.scripts.download_model
+uvicorn app.main:app --reload --port 8000    # API docs: http://localhost:8000/docs
+
+# frontend (new terminal)
+cd frontend
+cp .env.example .env.local      # VITE_API_URL=http://localhost:8000
+npm install && npm run dev      # http://localhost:5173
 ```
 
-For the free local option, just leave `LLM_PROVIDER=ollama` and set:
+## Tests
+
+```bash
+cd backend && pytest                 # 78 tests; `pytest -m "not network"` skips the real GitHub clone tests
+cd frontend && npm run build         # type-checks and builds
 ```
-OLLAMA_MODEL=qwen2.5-coder:7b
-```
-Also fill in `DATABASE_URL` (your Neon connection string) and `JWT_SECRET`
-as described in section 2 above — the backend won't start without a valid
-`DATABASE_URL`.
-Then in a separate terminal:
-```powershell
-ollama pull qwen2.5-coder:7b
-ollama serve
-```
-(Ollama usually auto-starts a background service after install, so `ollama serve`
-may already be running — check the system tray.)
+Covered: all 16 languages with exact line-range verification, long-function splitting, the 4-node LangGraph and
+2–4 sub-query guarantee, de-duplication, citation grounding, duplicate detection, FAISS persistence/restart/isolation,
+every LLM provider's request/response handling, JWT auth, CORS, cross-user authorization, input validation, and a full
+workflow against a real GitHub repository (clone → index → query → citations compared with the upstream files).
 
-If you'd rather use a hosted free tier, set `LLM_PROVIDER=groq` and paste your
-key into `GROQ_API_KEY` (no local model download needed).
+The automated tests use a **hashing stand-in for the embedder and a scripted LLM** (see `backend/tests/conftest.py`)
+because the real MiniLM weights and LLM APIs need network access. The production code path uses only
+Sentence-Transformers MiniLM; `python -m app.scripts.download_model` (run in the Docker build) fails the build if the
+model cannot be loaded or does not produce 384-d vectors.
 
-### Step 3 — Run the backend
+## Security notes
+Passwords are bcrypt-hashed; JWTs are HS256 with expiry; repository URLs are strictly validated and cloned with
+argument lists (no shell), hooks/submodules/credential prompts disabled and size/time limits; symlinks are never followed;
+validation errors never echo submitted values; the JWT is kept in `localStorage` (simple, but exposed to XSS, so
+the app renders model output through `react-markdown` without raw HTML). There is no login rate limiting; add one
+(or Cloudflare) before exposing it publicly.
 
-```powershell
-# still inside ai-swe\backend, with venv active
-uvicorn app.main:app --reload --port 8000
-```
-
-Visit `http://localhost:8000/api/health` — you should see `{"status":"ok",...}`.
-
-### Step 4 — Run the frontend (new terminal)
-
-```powershell
-cd ai-swe\frontend
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173` in your browser.
-
-### Step 5 — Use it
-1. Paste a GitHub repo URL (e.g. `https://github.com/psf/requests`) → **Index repo**.
-   First index can take a minute or two (cloning + embedding).
-2. Ask questions like *"Where is authentication handled?"* or *"Explain the retry logic."*
-3. Enter a file path (e.g. `requests/auth.py`) and use the quick action buttons
-   to generate docs, tests, find duplicates, or get optimization suggestions.
-
----
-
-## 4. Running with Docker (optional, alternative to venv)
-
-```powershell
-cd ai-swe
-copy backend\.env.example backend\.env
-# edit backend\.env as above
-docker compose up --build
-```
-
-Backend → `http://localhost:8000`, frontend → `http://localhost:5173`.
-
-If you're using **Ollama** and running Docker, Ollama should stay running on
-your Windows host, and the backend container needs to reach it via
-`host.docker.internal` — uncomment `extra_hosts` in `docker-compose.yml` and
-set `OLLAMA_BASE_URL=http://host.docker.internal:11434` in `.env`.
-
----
-
-## 5. How each requested capability maps to the code
-
-| Feature | Implementation |
-|---|---|
-| Explain authentication flow / Where is JWT implemented / Which files handle login / Explain this API | `/api/ask` → full LangGraph pipeline (Planner plans sub-queries, Code Search retrieves via FAISS, Reasoner + Final Answer synthesize a cited answer) |
-| Generate documentation | `/api/repos/docs` (pre-filled prompt, reuses the same graph) |
-| Find duplicate code | `/api/repos/duplicates` |
-| Suggest optimizations | `/api/repos/optimize` |
-| Generate unit tests | `/api/repos/tests` |
-
-Code understanding comes from **Tree-sitter** (`app/ingestion/parser.py`),
-which parses each source file into an AST and extracts function/class/method
-level chunks (with a line-window fallback for unsupported languages) —
-this is what lets retrieval return whole, meaningful units of code instead of
-arbitrary text slices.
-
----
-
-## 6. Extending this project (ideas for your portfolio writeup)
-
-- Add a `Critic` node to the graph that checks the Final Answer against the
-  retrieved sources and asks the Reasoner to redo the search if unsupported.
-- Stream tokens over Server-Sent Events / WebSockets instead of returning the
-  full answer at once.
-- Add incremental indexing (only re-embed changed files) via git diff.
-- Swap FAISS for a hosted vector DB (Qdrant, pgvector) for multi-user scale.
-- Add authentication + per-user repo indexes for a real SaaS version.
+## API overview
+`POST /api/auth/register|login` · `GET /api/auth/me` · `GET|POST /api/repos` · `GET|DELETE /api/repos/{id}` ·
+`POST /api/repos/{id}/reindex` · `GET /api/repos/{id}/duplicates` · `POST /api/repos/{id}/query` ·
+`GET /api/repos/{id}/history|conversations` · `GET /api/llm/providers` · `GET /api/health[/ready]`.
+Interactive docs at `/docs`.

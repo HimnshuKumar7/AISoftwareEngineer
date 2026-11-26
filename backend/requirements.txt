@@ -1,33 +1,37 @@
-fastapi==0.115.0
-uvicorn[standard]==0.30.6
-pydantic-settings==2.5.2
-pydantic[email]==2.9.2
-python-dotenv==1.0.1
-gitpython==3.1.43
-bcrypt==4.0.1
-psutil==6.1.0
+# Core runtime pins (tested versions). torch is installed separately from the CPU wheel index
+# (see Dockerfile / README) because the default PyPI torch pulls ~2 GB of CUDA libraries.
+fastapi==0.165.0
+uvicorn[standard]==0.54.0
+sqlalchemy==2.1.9
+psycopg[binary]==3.3.9
+pyjwt==2.15.0
+bcrypt==5.0.0
+pydantic==2.13.5
+pydantic-settings==2.16.3
+email-validator==2.4.0
+httpx==0.28.1
+numpy==2.5.3
 
-# Auth + Neon Postgres
-sqlalchemy==2.0.35
-psycopg2-binary==2.9.9
-passlib[bcrypt]==1.7.4
-python-jose[cryptography]==3.3.0
+# RAG stack
+langgraph==1.2.24
+faiss-cpu==1.16.0
+sentence-transformers==6.3.0
 
-tree-sitter==0.21.3
-tree-sitter-languages==1.10.2
-
-langchain==0.3.7
-langchain-core==0.3.15
-langchain-community==0.3.5
-langchain-text-splitters==0.3.2
-langchain-huggingface==0.1.2
-langgraph==0.2.45
-
-faiss-cpu==1.9.0
-sentence-transformers==3.2.1
-
-# Free / low-cost LLM providers - install whichever you plan to use
-langchain-ollama==0.2.0
-langchain-groq==0.2.1
-langchain-google-genai==2.0.4
-langchain-openai==0.2.6
+# Tree-sitter: core + one self-contained grammar wheel per language (no runtime downloads)
+tree-sitter==0.27.0
+tree-sitter-python==0.25.0
+tree-sitter-javascript==0.25.0
+tree-sitter-typescript==0.23.2
+tree-sitter-java==0.23.5
+tree-sitter-go==0.25.0
+tree-sitter-rust==0.24.2
+tree-sitter-c==0.24.2
+tree-sitter-cpp==0.23.4
+tree-sitter-c-sharp==0.24.0
+tree-sitter-ruby==0.23.1
+tree-sitter-php==0.25.2
+tree-sitter-kotlin==1.1.0
+tree-sitter-swift==0.7.4
+tree-sitter-scala==0.26.13
+tree-sitter-bash==0.25.1
+tree-sitter-lua==0.5.0
