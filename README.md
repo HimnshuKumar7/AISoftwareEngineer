@@ -19,7 +19,7 @@ An AI-powered code intelligence platform that lets users ask questions about pub
 
 | Layer | Technologies | Hosting |
 |---|---|---|
-| Frontend | React, Vite, TypeScript | Vercel |
+| Frontend | React 18, Vite, JavaScript, CSS Modules | Vercel |
 | Backend | Python, FastAPI | Railway |
 | Code Parsing | Tree-sitter | Backend |
 | Embeddings | Sentence Transformers (MiniLM) | Backend |
@@ -137,6 +137,7 @@ cd backend
 pytest
 
 cd frontend
+npm run lint
 npm run build
 ```
 
@@ -158,7 +159,16 @@ AI-Software-Engineer/
 │   ├── tests/
 │   └── Dockerfile
 ├── frontend/
-│   └── src/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── features/
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   ├── pages/
+│   │   └── styles/
+│   └── vercel.json
 ├── scripts/
 │   └── smoke_test.py
 └── README.md
