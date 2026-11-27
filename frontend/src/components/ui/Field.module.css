@@ -1,0 +1,77 @@
+.field {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.label {
+  font-size: var(--text-md);
+  font-weight: 500;
+}
+
+.optional {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input,
+.select {
+  width: 100%;
+  min-width: 0;
+  height: var(--control-md);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  font-size: var(--text-md);
+}
+
+.input {
+  padding: 0 var(--space-3);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.input:focus,
+.select:focus {
+  border-color: var(--color-link);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.hasTrailing .input {
+  padding-right: 3rem;
+}
+
+.trailing {
+  position: absolute;
+  right: var(--space-1);
+  display: flex;
+}
+
+.select {
+  height: var(--control-sm);
+  padding: 0 var(--space-2);
+  background: var(--color-surface);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+}
+
+/* 16px inputs stop iOS Safari zooming on focus. */
+@media (max-width: 600px) {
+  .input {
+    font-size: 1rem;
+  }
+}

@@ -1,0 +1,27 @@
+.form {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.row .submit {
+  flex: 1;
+}
+
+.row .branchToggle {
+  width: var(--control-md);
+  height: var(--control-md);
+  border: 1px solid var(--color-border-strong);
+}
+
+.row .branchToggle[aria-pressed="true"] {
+  border-color: var(--color-link);
+  background: var(--color-surface-raised);
+  color: var(--color-link);
+}

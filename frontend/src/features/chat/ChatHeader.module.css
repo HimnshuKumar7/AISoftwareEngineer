@@ -1,0 +1,71 @@
+.heading {
+  flex: 1 1 17rem;
+  min-width: 0;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.title {
+  overflow: hidden;
+  font-size: var(--text-base);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.owner {
+  color: var(--color-text-muted);
+  font-weight: 400;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  column-gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+  list-style: none;
+  white-space: nowrap;
+}
+
+.tools {
+  display: flex;
+  flex: 1 1 18rem;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.tools .history {
+  width: 12rem;
+  min-width: 5rem;
+  flex-shrink: 1;
+}
+
+.divider {
+  width: 1px;
+  height: 1.25rem;
+  background: var(--color-border);
+}
+
+/* When the header is narrow, the controls take their own full-width row. */
+@container main-header (max-width: 36rem) {
+  .heading {
+    flex-basis: 0;
+  }
+
+  .tools {
+    flex-basis: 100%;
+  }
+
+  .tools .history {
+    flex: 1;
+    width: auto;
+  }
+}

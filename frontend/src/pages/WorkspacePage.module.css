@@ -1,0 +1,99 @@
+.workspace {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  height: 100%;
+}
+
+.withSource {
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr) var(--source-width);
+}
+
+.sidebar {
+  min-height: 0;
+  border-right: 1px solid var(--color-border);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.source {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+}
+
+.pageTitle {
+  font-size: var(--text-base);
+}
+
+.scrim {
+  display: none;
+}
+
+/* Medium screens: the source viewer slides over the chat instead of squeezing it. */
+@media (max-width: 1280px) {
+  .withSource {
+    grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
+  }
+
+  .source {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    width: min(var(--source-width), 100vw);
+    box-shadow: var(--shadow-overlay);
+  }
+}
+
+/* Small screens: the sidebar is a drawer and the source viewer is a bottom sheet. */
+@media (max-width: 900px) {
+  .workspace,
+  .withSource {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 45;
+    width: min(86vw, 20rem);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.22s ease, visibility 0.22s;
+  }
+
+  .open {
+    transform: none;
+    visibility: visible;
+    box-shadow: var(--shadow-overlay);
+  }
+
+  .scrim {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: var(--color-scrim);
+  }
+
+  .source {
+    top: auto;
+    left: 0;
+    width: auto;
+    height: 75dvh;
+    overflow: hidden;
+    border-top: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+}

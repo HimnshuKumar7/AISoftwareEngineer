@@ -1,0 +1,64 @@
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  text-align: left;
+}
+
+.item:hover {
+  background: var(--color-surface-raised);
+}
+
+.selected {
+  border-color: var(--color-border-strong);
+  background: var(--color-surface-raised);
+}
+
+.name,
+.owner {
+  overflow: hidden;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name {
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+
+.owner {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.detail,
+.failure {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.detail {
+  color: var(--color-text-muted);
+}
+
+.failure {
+  color: var(--color-danger);
+}

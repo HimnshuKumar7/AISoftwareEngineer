@@ -1,0 +1,22 @@
+.citation {
+  display: inline;
+  max-width: calc(100% - 0.5rem); /* leaves room for trailing punctuation */
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--color-cite-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-cite-bg);
+  color: var(--color-cite);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.citation:hover:not(:disabled) {
+  border-color: var(--color-cite);
+}
+
+.citation:disabled {
+  opacity: 0.5;
+}

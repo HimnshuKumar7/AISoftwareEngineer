@@ -1,0 +1,26 @@
+.button {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+}
+
+.button:disabled {
+  opacity: 0.4;
+}
+
+.icon {
+  width: 1.05rem;
+  height: 1.05rem;
+}

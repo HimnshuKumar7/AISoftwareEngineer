@@ -1,0 +1,68 @@
+.dock {
+  flex: none;
+  width: 100%;
+  max-width: calc(var(--content-width) + 2 * var(--space-4));
+  margin: 0 auto;
+  padding: 0 var(--space-4) var(--space-4);
+}
+
+.composer {
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.composer:focus-within {
+  border-color: var(--color-link);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.input {
+  display: block;
+  width: 100%;
+  min-height: 4rem;
+  max-height: 12rem;
+  padding: var(--space-3) var(--space-4);
+  border: 0;
+  background: transparent;
+  outline: none;
+  resize: vertical;
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  min-width: 0;
+  margin-left: auto;
+}
+
+.actions .provider {
+  width: auto;
+  max-width: 12rem;
+}
+
+@media (max-width: 600px) {
+  .dock {
+    padding: 0 var(--space-3) var(--space-3);
+  }
+
+  .input {
+    font-size: 1rem;
+  }
+}

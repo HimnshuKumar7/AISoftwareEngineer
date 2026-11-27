@@ -1,0 +1,33 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: 23rem;
+}
+
+.header {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-2);
+}
+
+.title {
+  font-size: var(--text-xl);
+}
+
+.subtitle,
+.switch {
+  color: var(--color-text-muted);
+  font-size: var(--text-md);
+}
+
+.switch {
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .header {
+    text-align: center;
+  }
+}

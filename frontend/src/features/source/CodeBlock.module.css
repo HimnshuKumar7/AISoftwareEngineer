@@ -1,0 +1,39 @@
+.block {
+  margin: 0;
+  overflow: auto;
+  background: var(--color-code-bg);
+  font-size: var(--text-xs);
+  line-height: 1.7;
+}
+
+/* Wide enough for the longest line, so highlights span the full scroll width. */
+.lines {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: var(--space-2) 0;
+}
+
+.line {
+  display: flex;
+  padding-right: var(--space-4);
+  white-space: pre;
+}
+
+.marked {
+  background: var(--color-cite-bg);
+  box-shadow: inset 3px 0 0 var(--color-cite);
+}
+
+.number {
+  flex: none;
+  width: calc(var(--gutter-digits) * 1ch + var(--space-8));
+  padding-right: var(--space-4);
+  color: var(--color-text-muted);
+  text-align: right;
+  user-select: none;
+}
+
+.marked .number {
+  color: var(--color-cite);
+}

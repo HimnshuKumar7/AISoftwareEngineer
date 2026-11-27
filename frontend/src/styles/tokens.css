@@ -1,0 +1,107 @@
+/*
+ * Design tokens: the only place colours, type sizes, spacing and control sizes are defined.
+ * Dark is the default; light follows the operating-system preference.
+ */
+:root {
+  --color-bg: #12141b;
+  --color-surface: #191c25;
+  --color-surface-raised: #222632;
+  --color-border: #2c3140;
+  --color-border-strong: #424a5e;
+  --color-text: #e7e9f0;
+  --color-text-muted: #9ba3b6;
+
+  --color-primary: #5663d6;
+  --color-primary-hover: #6571e0;
+  --color-on-primary: #ffffff;
+  --color-link: #a3adff;
+  --color-focus-ring: rgba(122, 134, 255, 0.35);
+
+  /* Amber marks everything that points at a line of code: citations and highlighted lines. */
+  --color-cite: #f2c265;
+  --color-cite-bg: rgba(242, 194, 101, 0.12);
+  --color-cite-border: rgba(242, 194, 101, 0.32);
+
+  --color-success: #52c487;
+  --color-success-bg: rgba(82, 196, 135, 0.13);
+  --color-warning: #e0ac4f;
+  --color-warning-bg: rgba(224, 172, 79, 0.13);
+  --color-danger: #ff7b78;
+  --color-danger-bg: rgba(255, 123, 120, 0.12);
+  --color-danger-solid: #c43d42;
+  --color-code-bg: #0f1117;
+  --color-scrim: rgba(5, 7, 12, 0.6);
+
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-md: 0.875rem;
+  --text-base: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2.125rem;
+
+  /* 4px spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --control-sm: 2rem;
+  --control-md: 2.5rem;
+
+  /* The sidebar, chat and source headers share one height so their dividers line up. */
+  --header-height: 4.25rem;
+  --sidebar-width: 18rem;
+  --source-width: 30rem;
+  --content-width: 52rem;
+
+  --shadow-overlay: 0 16px 48px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color-bg: #f5f6f8;
+    --color-surface: #ffffff;
+    --color-surface-raised: #eef0f5;
+    --color-border: #dde0e8;
+    --color-border-strong: #bfc5d3;
+    --color-text: #181c28;
+    --color-text-muted: #555e73;
+
+    --color-primary: #424ec4;
+    --color-primary-hover: #343fae;
+    --color-link: #3641b0;
+    --color-focus-ring: rgba(66, 78, 196, 0.25);
+
+    --color-cite: #825000;
+    --color-cite-bg: #fdf1d6;
+    --color-cite-border: #ecd193;
+
+    --color-success: #146c43;
+    --color-success-bg: #dff3e8;
+    --color-warning: #825000;
+    --color-warning-bg: #fdf1d6;
+    --color-danger: #b3262d;
+    --color-danger-bg: #fcebec;
+    --color-danger-solid: #b3262d;
+    --color-code-bg: #f8f9fb;
+    --color-scrim: rgba(24, 28, 40, 0.4);
+
+    --shadow-overlay: 0 16px 48px rgba(24, 28, 40, 0.18);
+
+    color-scheme: light;
+  }
+}
