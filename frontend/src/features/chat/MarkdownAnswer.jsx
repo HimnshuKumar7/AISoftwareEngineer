@@ -17,6 +17,13 @@ export default function MarkdownAnswer({ markdown, sources, onOpenSource }) {
         remarkPlugins={[remarkGfm]}
         urlTransform={keepCitations}
         components={{
+          table({ children }) {
+            return (
+              <div className={styles.tableWrapper} tabIndex={0} role="region" aria-label="Data table">
+                <table>{children}</table>
+              </div>
+            );
+          },
           a({ href, children }) {
             const ref = parseCiteHref(href);
             if (ref) {
