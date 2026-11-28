@@ -19,11 +19,12 @@ DECOMPOSE_MODE_HINTS = {
     "duplicates": "The developer wants duplicate/near-duplicate code: include queries describing the repeated logic from different angles.",
 }
 
-_CITATION_RULES = """Citation rules (strict):
-- Context excerpts are labelled `Source N: <path> lines <start>-<end>` and every code line is prefixed with its real line number.
-- After each statement about the code, cite the supporting lines as [path:start-end] (or [path:line]) using ONLY paths and line numbers that appear in the excerpts. Example: [src/auth/jwt.py:41-58]
-- Never invent files, functions, or line numbers. If the excerpts do not contain the answer, say what is missing instead of guessing.
-- Prefer several narrow citations over one broad range."""
+_CITATION_RULES = """Response format & citation rules (strict):
+- First, explain the answer briefly in plain, normal conversational language without code blocks or [path:start-end] citations.
+- Then, add a concise `### Code & Citations` section with only the key short code snippets and supporting [path:start-end] (or [path:line]) citations.
+- Keep the overall response brief and focused so it stays well within token limits.
+- Context excerpts are labelled `Source N: <path> lines <start>-<end>` with real line numbers. Use ONLY paths and line numbers from those excerpts (e.g. [src/auth/jwt.py:41-58]).
+- Never invent files, functions, or line numbers. If the excerpts lack the answer, say what is missing."""
 
 GENERATE_SYSTEM = {
     "qa": f"""You are an AI software engineer answering questions about the GitHub repository "{{repo}}".
@@ -51,5 +52,6 @@ but do different things. If there are no real duplicates in the excerpts, say so
 }
 
 ANSWER_FORMAT_REMINDER = (
-    "Answer the question now. Cite code with [path:start-end] using only the Source line numbers above."
+    "Answer briefly in plain conversational language first, then add a concise `### Code & Citations` section "
+    "with [path:start-end] citations using only the Source line numbers above."
 )
